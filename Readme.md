@@ -1,83 +1,108 @@
-# KIND & minikube Cluster Setup Guide-----
+# KIND & Minikube Cluster Setup Guide
 
-#Installing KIND and kubectl first --
+## 🛠️ 1. Installing KIND and `kubectl`
 
-echo "------------kind installing --------------------------"
+Install KIND and `kubectl` using the following script:
 
+<details>
+<summary><code>Install Script (bash)</code></summary>
+
+```bash
 #!/bin/bash
-#For AMD64 / x86_64
-[ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.29.0/kind-linux-amd64
-#For ARM64
-[ $(uname -m) = aarch64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.29.0/kind-linux-arm64
+
+# Install KIND
+echo "Installing KIND..."
+if [ "$(uname -m)" = "x86_64" ]; then
+  curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.29.0/kind-linux-amd64
+elif [ "$(uname -m)" = "aarch64" ]; then
+  curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.29.0/kind-linux-arm64
+fi
 chmod +x ./kind
 sudo mv ./kind /usr/local/bin/kind
 
-echo "------------kubectl installing --------------------------"
-
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256"
+# Install kubectl
+echo "Installing kubectl..."
+curl -LO "https://dl.k8s.io/release/$(curl -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+curl -LO "https://dl.k8s.io/release/$(curl -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256"
 echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
-sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl 
 chmod +x kubectl
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 mkdir -p ~/.local/bin
 mv ./kubectl ~/.local/bin/kubectl
-#and then append (or prepend) ~/.local/bin to $PATH
+
+# Test installation
 kubectl version --client
+echo "KIND & kubectl installation complete."
+```
+</details>
 
-echo "--------kind & kubectl installation complete-----------"
+---
 
-2. Setting Up the KIND Cluster
+## ⚙️ 2. Setting Up the KIND Cluster
 
-Create a kind-cluster-config.yaml file:
-and copy below template using vim -
- 
+Create a `kind-cluster-config.yaml` file:
+
+```yaml
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
-
 nodes:
-- role: control-plane
-  image: kindest/node:v1.33.1@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f
-- role: worker
-  image: kindest/node:v1.33.1@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f
-- role: worker
-  image: kindest/node:v1.33.1@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f
-  extraPortMappings:
-  - containerPort: 80
-    hostPort: 80
-    protocol: TCP
-  - containerPort: 443
-    hostPort: 443
-    protocol: TCP
+  - role: control-plane
+    image: kindest/node:v1.33.1@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f
+  - role: worker
+    image: kindest/node:v1.33.1@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f
+  - role: worker
+    image: kindest/node:v1.33.1@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 80
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 443
+        protocol: TCP
+```
 
-Create the cluster using the configuration file:
+### ➕ Create the cluster:
 
+```bash
 kind create cluster --config kind-cluster-config.yaml --name my-kind-cluster
+```
 
-Verify the cluster:
+### ✅ Verify the cluster:
 
+```bash
 kubectl get nodes
 kubectl cluster-info
+```
 
-3. Accessing the Cluster
-Use kubectl to interact with the cluster:
+---
 
+## 📡 3. Accessing the Cluster
+
+Use `kubectl`:
+
+```bash
 kubectl cluster-info
+```
 
-#That's it your cluster has been setup you can start working on it 
+---
 
+## 📊 4. Setting Up the Kubernetes Dashboard
 
-4. Setting Up the Kubernetes Dashboard
-Deploy the Dashboard Apply the Kubernetes Dashboard manifest:
+### 🔹 Deploy the Dashboard:
 
+```bash
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
-Create an Admin User Create a dashboard-admin-user.yml file with the following content:
+```
 
+### 🔹 Create Admin User (`dashboard-admin-user.yml`):
+
+```yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: admin-user
   namespace: kubernetes-dashboard
-  
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -87,49 +112,86 @@ roleRef:
   kind: ClusterRole
   name: cluster-admin
 subjects:
-- kind: ServiceAccount
-  name: admin-user
-  namespace: kubernetes-dashboard
+  - kind: ServiceAccount
+    name: admin-user
+    namespace: kubernetes-dashboard
+```
+
 Apply the configuration:
 
+```bash
 kubectl apply -f dashboard-admin-user.yml
-Get the Access Token Retrieve the token for the admin-user:
+```
 
+### 🔹 Get the Access Token:
+
+```bash
 kubectl -n kubernetes-dashboard create token admin-user
-Copy the token for use in the Dashboard login.
+```
 
-Access the Dashboard Start the Dashboard using kubectl proxy:
+### 🔹 Access the Dashboard:
 
+```bash
 kubectl proxy
-Open the Dashboard in your browser:
+```
 
+Open your browser and visit:
+
+```
 http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
-Use the token from the previous step to log in.
+```
 
-5. Deleting the Cluster
-Delete the KIND cluster:
+Use the token to log in.
 
+---
+
+## 🗑️ 5. Deleting the KIND Cluster
+
+```bash
 kind delete cluster --name my-kind-cluster
+```
 
-6. Notes
-Multiple Clusters: KIND supports multiple clusters. Use unique --name for each cluster. Custom Node Images: Specify Kubernetes versions by updating the image in the configuration file. Ephemeral Clusters: KIND clusters are temporary and will be lost if Docker is restarted.
+---
 
+## 📝 6. Notes
 
--------------------------------------------------------------------------------------------------------
+- **Multiple Clusters:** Use unique `--name` for each cluster.
+- **Custom Node Images:** Update the image in your config to specify Kubernetes versions.
+- **Ephemeral Nature:** KIND clusters are temporary and deleted when Docker restarts.
 
-**Minikube ---
+---
 
-1st - sudo apt-get install -y apt-transport-https ca-certificates curl gpg
-2nd - docker 
-3rd - curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
- chmod +x minikube
+# 🚀 Minikube Setup Guide
+
+### 🔧 1. Install Prerequisites
+
+```bash
+sudo apt-get install -y apt-transport-https ca-certificates curl gpg
+```
+
+### 🐳 2. Install Docker (required as Minikube driver)
+
+Make sure Docker is installed and running.
+
+### 📦 3. Install Minikube
+
+```bash
+curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+chmod +x minikube
 sudo mv minikube /usr/local/bin/
+```
 
-4th - install kubectl
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+### 🔗 4. Install kubectl (if not already installed)
+
+```bash
+curl -LO "https://dl.k8s.io/release/$(curl -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 chmod +x kubectl
 sudo mv kubectl /usr/local/bin/
+```
 
-5th - Start minikube
-. minikube start --driver=docker --vm=true 
-. minikube status
+### 🚀 5. Start Minikube
+
+```bash
+minikube start --driver=docker --vm=true
+minikube status
+```
