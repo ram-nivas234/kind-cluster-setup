@@ -1,13 +1,13 @@
-#KIND & minikube Cluster Setup Guide-----
+# KIND & minikube Cluster Setup Guide-----
 
-#1. Installing KIND and kubectl first --
+#Installing KIND and kubectl first --
 
-#Install KIND and kubectl using the provided script:
+echo "------------kind installing --------------------------"
 
 #!/bin/bash
-# For AMD64 / x86_64
+#For AMD64 / x86_64
 [ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.29.0/kind-linux-amd64
-# For ARM64
+#For ARM64
 [ $(uname -m) = aarch64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.29.0/kind-linux-arm64
 chmod +x ./kind
 sudo mv ./kind /usr/local/bin/kind
@@ -24,13 +24,13 @@ mv ./kubectl ~/.local/bin/kubectl
 # and then append (or prepend) ~/.local/bin to $PATH
 kubectl version --client
 
-echo "kind & kubectl installation complete."
-
----------------------------------------------------
+echo "--------kind & kubectl installation complete-----------"
 
 2. Setting Up the KIND Cluster
-Create a kind-cluster-config.yaml file:
 
+Create a kind-cluster-config.yaml file:
+and copy below template using vim -
+ 
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 
@@ -62,6 +62,9 @@ kubectl cluster-info
 Use kubectl to interact with the cluster:
 
 kubectl cluster-info
+
+#That's it your cluster has been setup you can start working on it 
+
 
 4. Setting Up the Kubernetes Dashboard
 Deploy the Dashboard Apply the Kubernetes Dashboard manifest:
